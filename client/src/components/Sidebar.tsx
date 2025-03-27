@@ -1,239 +1,173 @@
-import { useState } from "react";
+import React from "react";
 import { Link } from "wouter";
-import { Search, Facebook, Twitter, Linkedin, Instagram, Youtube } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Article, Category, Tag } from "@shared/schema";
+import { Facebook, Twitter, Instagram, Youtube, Linkedin } from "lucide-react";
+import { format } from "date-fns";
 
-type Category = {
-  id: number;
-  name: string;
-  slug: string;
-  count?: number;
-};
+interface SidebarProps {
+  recentPosts: Article[];
+  categories: Category[];
+  tags: Tag[];
+}
 
-type Tag = {
-  id: number;
-  name: string;
-  slug: string;
-};
-
-type PopularPost = {
-  id: number;
-  title: string;
-  slug: string;
-  imageUrl?: string;
-  viewCount: number;
-  createdAt: string;
-};
-
-type Author = {
-  id: number;
-  username: string;
-  displayName: string;
-  bio?: string;
-  avatarUrl?: string;
-};
-
-const Sidebar: React.FC = () => {
-  const [email, setEmail] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-
-  // Get categories
-  const { data: categories } = useQuery<Category[]>({
-    queryKey: ['/api/categories'],
-  });
-
-  // Get popular posts - in a real app, this would be a separate API endpoint
-  const { data: articles } = useQuery({
-    queryKey: ['/api/articles', { limit: 3 }],
-  });
-
-  // Get tags
-  const { data: tags } = useQuery<Tag[]>({
-    queryKey: ['/api/tags'],
-  });
-
-  // Get author
-  const { data: author } = useQuery<Author>({
-    queryKey: ['/api/users/1'], // Just get the first user for demo
-  });
-
-  const handleSubscribe = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!email) return;
-    
-    setIsSubmitting(true);
-    try {
-      await apiRequest('POST', '/api/subscribe', { email });
-      toast({
-        title: "Success",
-        description: "You have successfully subscribed to our newsletter!",
-        variant: "default",
-      });
-      setEmail("");
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to subscribe. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
+const Sidebar: React.FC<SidebarProps> = ({ recentPosts, categories, tags }) => {
   return (
     <div className="space-y-8">
       {/* About Widget */}
-      {author && (
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-bold mb-4 font-heading">About This Blog</h3>
-          <div className="flex items-center mb-4">
-            <img 
-              src={author.avatarUrl || "https://via.placeholder.com/64?text=A"} 
-              alt="Blog author" 
-              className="h-16 w-16 rounded-full mr-4" 
-            />
-            <div>
-              <h4 className="font-medium">{author.displayName}</h4>
-              <p className="text-sm text-gray-600">Content Strategist & Podcaster</p>
-            </div>
-          </div>
-          <p className="text-gray-700 text-sm mb-4">
-            {author.bio || "I share actionable tips, strategies, and insights for content creators looking to build sustainable online businesses."}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">About This Blog</CardTitle>
+        </CardHeader>
+        <Separator className="mb-4" />
+        <CardContent className="flex flex-col items-center">
+          <Avatar className="w-24 h-24 mb-4">
+            <AvatarImage src="https://randomuser.me/api/portraits/women/65.jpg" alt="Blog author" />
+            <AvatarFallback>EA</AvatarFallback>
+          </Avatar>
+          <p className="text-center text-muted-foreground font-serif mb-4">
+            Welcome to CreatorSpace! I'm Emma, and I share insights on content creation, 
+            digital marketing, and building an online presence.
           </p>
           <Link href="/about">
-            <a className="text-primary hover:text-primary-700 text-sm font-medium">Learn More →</a>
+            <a className="text-primary font-medium hover:underline">Read More</a>
           </Link>
-        </div>
-      )}
+        </CardContent>
+      </Card>
 
-      {/* Search Widget */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-bold mb-4 font-heading">Search</h3>
-        <form className="relative">
-          <input 
-            type="text" 
-            placeholder="Search articles..." 
-            className="w-full py-2 px-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary text-sm"
-          />
-          <button type="submit" className="absolute right-0 top-0 mr-2 mt-2 text-gray-500">
-            <Search className="w-5 h-5" />
-          </button>
-        </form>
-      </div>
-
-      {/* Categories Widget */}
-      {categories && categories.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-bold mb-4 font-heading">Categories</h3>
-          <div className="space-y-2">
-            {categories.map((category) => (
-              <Link key={category.id} href={`/articles?category=${category.slug}`}>
-                <a className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-md group transition-colors duration-200">
-                  <span className="text-gray-700 group-hover:text-primary">{category.name}</span>
-                  <span className="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">{category.count || 0}</span>
-                </a>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Popular Posts Widget */}
-      {articles && articles.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-bold mb-4 font-heading">Popular Posts</h3>
-          <div className="space-y-4">
-            {articles.slice(0, 3).map((post: any) => (
-              <div key={post.id} className="flex items-start">
-                <img 
-                  src={post.imageUrl || "https://via.placeholder.com/56?text=Post"} 
-                  alt="Post thumbnail" 
-                  className="h-14 w-14 rounded object-cover flex-shrink-0 mr-3" 
-                />
-                <div>
-                  <h4 className="text-sm font-medium text-gray-800 line-clamp-2">
-                    <Link href={`/articles/${post.slug}`}>
-                      <a className="hover:text-primary transition-colors duration-200">{post.title}</a>
-                    </Link>
-                  </h4>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {Math.floor(Math.random() * 5)}K views • {Math.floor(Math.random() * 14) + 1} days ago
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Newsletter Widget */}
-      <div className="bg-primary-50 rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-bold mb-2 font-heading">Subscribe to Newsletter</h3>
-        <p className="text-sm text-gray-700 mb-4">Get weekly content tips, resources, and inspiration delivered to your inbox.</p>
-        <form onSubmit={handleSubscribe}>
-          <div className="mb-3">
-            <input 
+      {/* Newsletter Signup */}
+      <Card className="bg-primary/5 border-primary/20">
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-bold mb-3">Subscribe to Newsletter</h3>
+          <p className="text-muted-foreground font-serif mb-4 text-sm">
+            Get the latest articles, podcasts, and resources delivered straight to your inbox.
+          </p>
+          <form className="space-y-3">
+            <Input 
               type="email" 
               placeholder="Your email address" 
-              className="w-full py-2 px-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-primary text-sm"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              className="w-full"
               required
             />
-          </div>
-          <button 
-            type="submit" 
-            className="w-full py-2 px-4 bg-primary hover:bg-primary-700 text-white font-medium rounded-md transition-colors duration-300 disabled:opacity-70"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Subscribing...' : 'Subscribe'}
-          </button>
-        </form>
-        <p className="text-xs text-gray-500 mt-2">We respect your privacy. Unsubscribe at any time.</p>
-      </div>
+            <Button type="submit" className="w-full">Subscribe</Button>
+          </form>
+        </CardContent>
+      </Card>
 
-      {/* Social Links Widget */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <h3 className="text-lg font-bold mb-4 font-heading">Connect With Me</h3>
-        <div className="flex justify-between">
-          <a href="#" className="text-gray-600 hover:text-blue-600 transition-colors duration-200">
-            <Facebook className="w-6 h-6" />
-          </a>
-          <a href="#" className="text-gray-600 hover:text-blue-400 transition-colors duration-200">
-            <Twitter className="w-6 h-6" />
-          </a>
-          <a href="#" className="text-gray-600 hover:text-red-600 transition-colors duration-200">
-            <Youtube className="w-6 h-6" />
-          </a>
-          <a href="#" className="text-gray-600 hover:text-blue-600 transition-colors duration-200">
-            <Linkedin className="w-6 h-6" />
-          </a>
-          <a href="#" className="text-gray-600 hover:text-pink-600 transition-colors duration-200">
-            <Instagram className="w-6 h-6" />
-          </a>
-        </div>
-      </div>
-      
-      {/* Tags Widget */}
-      {tags && tags.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h3 className="text-lg font-bold mb-4 font-heading">Popular Tags</h3>
+      {/* Recent Posts */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Recent Posts</CardTitle>
+        </CardHeader>
+        <Separator className="mb-4" />
+        <CardContent className="px-6 py-0">
+          <ul className="space-y-4">
+            {recentPosts.map((post) => (
+              <li key={post.id} className="flex py-2">
+                <div className="flex-shrink-0 mr-3">
+                  <img 
+                    src={post.featuredImage || "https://placehold.co/100x100/e6e7ee/818cf8?text=Thumb"} 
+                    alt={post.title} 
+                    className="w-16 h-16 rounded object-cover" 
+                  />
+                </div>
+                <div>
+                  <h4 className="font-medium hover:text-primary text-sm">
+                    <Link href={`/articles/${post.slug}`}>
+                      <a>{post.title}</a>
+                    </Link>
+                  </h4>
+                  <span className="text-xs text-muted-foreground">
+                    {format(new Date(post.publishDate), "MMM d, yyyy")}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-4 mb-2">
+            <Link href="/articles">
+              <a className="text-primary text-sm font-medium hover:underline">
+                View All Posts
+              </a>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Categories */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Categories</CardTitle>
+        </CardHeader>
+        <Separator className="mb-4" />
+        <CardContent className="px-6 py-0">
+          <ul className="space-y-2">
+            {categories.map((category) => (
+              <li key={category.id}>
+                <Link href={`/categories/${category.slug}`}>
+                  <a className="flex justify-between items-center text-foreground hover:text-primary py-1">
+                    <span>{category.name}</span>
+                    <Badge variant="outline" className="rounded-full bg-muted/50">
+                      {category.count}
+                    </Badge>
+                  </a>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+
+      {/* Social Links */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Follow Me</CardTitle>
+        </CardHeader>
+        <Separator className="mb-4" />
+        <CardContent>
+          <div className="flex justify-center space-x-4">
+            <Button size="icon" className="rounded-full bg-[#3b5998] hover:bg-[#3b5998]/90" aria-label="Facebook">
+              <Facebook className="h-5 w-5" />
+            </Button>
+            <Button size="icon" className="rounded-full bg-[#1da1f2] hover:bg-[#1da1f2]/90" aria-label="Twitter">
+              <Twitter className="h-5 w-5" />
+            </Button>
+            <Button size="icon" className="rounded-full bg-[#e4405f] hover:bg-[#e4405f]/90" aria-label="Instagram">
+              <Instagram className="h-5 w-5" />
+            </Button>
+            <Button size="icon" className="rounded-full bg-[#ff0000] hover:bg-[#ff0000]/90" aria-label="YouTube">
+              <Youtube className="h-5 w-5" />
+            </Button>
+            <Button size="icon" className="rounded-full bg-[#0077b5] hover:bg-[#0077b5]/90" aria-label="LinkedIn">
+              <Linkedin className="h-5 w-5" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tags Cloud */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Popular Tags</CardTitle>
+        </CardHeader>
+        <Separator className="mb-4" />
+        <CardContent>
           <div className="flex flex-wrap gap-2">
             {tags.map((tag) => (
-              <Link key={tag.id} href={`/articles?tag=${tag.slug}`}>
-                <a className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full hover:bg-primary-50 hover:text-primary-700 transition-colors duration-200">
-                  #{tag.name}
+              <Link key={tag.id} href={`/tags/${tag.slug}`}>
+                <a className="px-3 py-1 bg-muted text-foreground text-sm rounded-full hover:bg-muted/80 transition-colors">
+                  {tag.name}
                 </a>
               </Link>
             ))}
           </div>
-        </div>
-      )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

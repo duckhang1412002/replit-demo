@@ -1,56 +1,50 @@
+import React from "react";
 import { Link } from "wouter";
-import { formatDistanceToNow } from "date-fns";
-import { ArticleProps } from "./ArticleCard";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { FeaturedArticleProps } from "@/lib/types";
 
-const FeaturedArticle: React.FC<ArticleProps> = ({
-  title,
-  slug,
-  excerpt,
-  imageUrl,
-  author,
-  createdAt
-}) => {
-  const formattedDate = formatDistanceToNow(new Date(createdAt), { addSuffix: true });
-
+const FeaturedArticle: React.FC<FeaturedArticleProps> = ({ article }) => {
   return (
-    <article className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
-      <div className="relative h-64 md:h-80">
+    <Card className="overflow-hidden bg-muted/30">
+      <div className="relative w-full h-80">
         <img 
-          src={imageUrl || "https://via.placeholder.com/1200x600?text=Featured+Article"} 
-          alt={title} 
-          className="absolute inset-0 w-full h-full object-cover"
+          src={article.featuredImage || "https://placehold.co/1200x600/e6e7ee/818cf8?text=Featured+Image"} 
+          alt={article.title} 
+          className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black opacity-70"></div>
-        <div className="absolute bottom-0 left-0 p-6 text-white">
-          <div className="flex items-center mb-2">
-            <span className="bg-accent text-white text-xs font-bold uppercase px-2 py-1 rounded">Featured</span>
-            <span className="ml-2 text-sm">{formattedDate}</span>
-          </div>
-          <h2 className="text-2xl md:text-3xl font-bold font-heading mb-2">{title}</h2>
-          <div className="flex items-center">
-            <img 
-              src={author.avatarUrl || "https://via.placeholder.com/40?text=A"} 
-              alt={`${author.displayName}'s profile`} 
-              className="h-8 w-8 rounded-full mr-2"
-            />
-            <span className="text-sm">by {author.displayName}</span>
-          </div>
-        </div>
       </div>
-      <div className="p-6">
-        <p className="mb-4 text-gray-700">
-          {excerpt}
-        </p>
-        <Link href={`/articles/${slug}`}>
-          <a className="inline-flex items-center text-primary hover:text-primary-700 font-medium">
-            Continue Reading
-            <svg className="ml-1 w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clipRule="evenodd"></path>
-            </svg>
+      <CardContent className="p-6">
+        <div className="flex items-center gap-2 mb-2">
+          <Badge className="rounded-full bg-secondary/20 text-secondary hover:bg-secondary/30">
+            Featured
+          </Badge>
+          <span className="text-muted-foreground text-sm">
+            {format(new Date(article.publishDate), "MMMM d, yyyy")}
+          </span>
+        </div>
+        <Link href={`/articles/${article.slug}`}>
+          <a className="text-2xl font-bold mb-3 block hover:text-primary transition-colors">
+            {article.title}
           </a>
         </Link>
-      </div>
-    </article>
+        <p className="text-muted-foreground mb-4 font-serif">
+          {article.excerpt}
+        </p>
+        <div className="flex items-center">
+          <Avatar className="h-10 w-10 mr-3">
+            <AvatarImage src="https://randomuser.me/api/portraits/women/42.jpg" alt="Author" />
+            <AvatarFallback>AU</AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="text-sm font-medium">Sarah Johnson</p>
+            <p className="text-xs text-muted-foreground">Content Strategist</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
